@@ -1,0 +1,110 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-02-23T08:42:26.357Z",
+  "units": [
+    {
+      "id": "tpd",
+      "name": "Tech-Priest Dominus",
+      "faction": "Adeptus Mechanicus",
+      "keywords": [
+        "Infantry",
+        "Character",
+        "Epic Hero",
+        "Tech-Priest",
+        "Dominus"
+      ],
+      "stats": {
+        "movement": "6\"",
+        "toughness": 4,
+        "save": "2+",
+        "wounds": 5,
+        "leadership": "5+",
+        "objectiveControl": 1
+      },
+      "weapons": [
+        {
+          "id": "wpn-arc-pistol",
+          "name": "Arc Pistol",
+          "type": "ranged",
+          "range": "12\"",
+          "attacks": "1",
+          "ballisticOrWeaponSkill": "4+",
+          "strength": 6,
+          "armorPenetration": -1,
+          "damage": "1",
+          "keywords": [
+            "Pistol"
+          ]
+        },
+        {
+          "id": "wpn-servo-arm",
+          "name": "Servo-arm",
+          "type": "melee",
+          "attacks": "1",
+          "ballisticOrWeaponSkill": "4+",
+          "strength": 6,
+          "armorPenetration": -2,
+          "damage": "2",
+          "keywords": []
+        }
+      ],
+      "abilities": [
+        {
+          "id": "ab-lords-of-the-mechanicus",
+          "name": "Lords of the Mechanicus",
+          "description": "Once per battle, at the start of your Command phase, this model can use this ability. Until the start of your next Command phase, each time a friendly Adeptus Mechanicus unit within 6\" of this model makes an attack, re-roll a hit roll of 1."
+        }
+      ],
+      "pointsCost": 95,
+      "notes": "Essential HQ choice for buffing nearby Skitarii units. Consider using the Warlord trait 'Programmatic Strategist'."
+    },
+    {
+      "id": "sr",
+      "name": "Skitarii Rangers",
+      "faction": "Adeptus Mechanicus",
+      "keywords": [
+        "Infantry",
+        "Skitarii",
+        "Rangers"
+      ],
+      "stats": {
+        "movement": "6\"",
+        "toughness": 3,
+        "save": "4+",
+        "wounds": 1,
+        "leadership": "6+",
+        "objectiveControl": 2
+      },
+      "weapons": [
+        {
+          "id": "wpn-radium-carbine",
+          "name": "Radium Carbine",
+          "type": "ranged",
+          "range": "18\"",
+          "attacks": "3",
+          "ballisticOrWeaponSkill": "4+",
+          "strength": 3,
+          "armorPenetration": 0,
+          "damage": "1",
+          "keywords": [
+            "Rapid Fire 1"
+          ]
+        }
+      ],
+      "abilities": [
+        {
+          "id": "ab-doctrines",
+          "name": "Doctrina Imperatives",
+          "description": "Adeptus Mechanicus units can be given one of four Doctrina Imperatives at the start of each battle round, granting them different bonuses depending on the chosen doctrine."
+        },
+        {
+          "id": "ab-bionics",
+          "name": "Bionics",
+          "description": "This unit has a 6+ invulnerable save."
+        }
+      ],
+      "pointsCost": 75,
+      "notes": "Skitarii Rangers are the backbone of the Adeptus Mechanicus army, providing scoring and mid-range firepower."
+    }
+  ]
+}

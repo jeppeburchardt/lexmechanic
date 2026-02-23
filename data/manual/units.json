@@ -1,0 +1,21 @@
+[
+  {
+    "id": "tpd",
+    "notes": "Essential HQ choice for buffing nearby Skitarii units. Consider using the Warlord trait 'Programmatic Strategist'.",
+    "pointsCost": 95,
+    "keywords": ["Infantry", "Character", "Epic Hero", "Tech-Priest", "Dominus"],
+    "abilities": [
+      {
+        "id": "ab-lords-of-the-mechanicus",
+        "name": "Lords of the Mechanicus",
+        "description": "Once per battle, at the start of your Command phase, this model can use this ability. Until the start of your next Command phase, each time a friendly Adeptus Mechanicus unit within 6\" of this model makes an attack, re-roll a hit roll of 1."
+      }
+    ]
+  },
+  {
+    "id": "sr",
+    "notes": "Skitarii Rangers are the backbone of the Adeptus Mechanicus army, providing scoring and mid-range firepower.",
+    "pointsCost": 75,
+    "keywords": ["Infantry", "Skitarii", "Rangers"]
+  }
+]

@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  Example Battlescribe-compatible catalogue file for Adeptus Mechanicus.
+  Place real .cat files from the Battlescribe data repository in this directory.
+  The extraction step (step1-extract.ts) reads all .xml/.cat files here.
+-->
+<catalogue id="am-example" name="Adeptus Mechanicus" revision="1"
+           battleScribeVersion="2.03" gameSystemId="sys-wh40k">
+  <sharedProfiles>
+
+    <!-- ====== Tech-Priest Dominus ====== -->
+    <profile id="tpd-profile" name="Tech-Priest Dominus" hidden="false"
+             typeId="unit-profile" typeName="Unit">
+      <characteristics>
+        <characteristic name="M" typeId="stat-m">6"</characteristic>
+        <characteristic name="T" typeId="stat-t">4</characteristic>
+        <characteristic name="SV" typeId="stat-sv">2+</characteristic>
+        <characteristic name="W" typeId="stat-w">5</characteristic>
+        <characteristic name="LD" typeId="stat-ld">5+</characteristic>
+        <characteristic name="OC" typeId="stat-oc">1</characteristic>
+      </characteristics>
+    </profile>
+
+    <!-- ====== Skitarii Ranger ====== -->
+    <profile id="sr-profile" name="Skitarii Ranger" hidden="false"
+             typeId="unit-profile" typeName="Unit">
+      <characteristics>
+        <characteristic name="M" typeId="stat-m">6"</characteristic>
+        <characteristic name="T" typeId="stat-t">3</characteristic>
+        <characteristic name="SV" typeId="stat-sv">4+</characteristic>
+        <characteristic name="W" typeId="stat-w">1</characteristic>
+        <characteristic name="LD" typeId="stat-ld">6+</characteristic>
+        <characteristic name="OC" typeId="stat-oc">2</characteristic>
+      </characteristics>
+    </profile>
+
+    <!-- ====== Weapons ====== -->
+    <profile id="wpn-radium-carbine" name="Radium Carbine" hidden="false"
+             typeId="weapon-profile" typeName="Weapon">
+      <characteristics>
+        <characteristic name="Type" typeId="wpn-type">ranged</characteristic>
+        <characteristic name="Range" typeId="wpn-range">18"</characteristic>
+        <characteristic name="A" typeId="wpn-a">3</characteristic>
+        <characteristic name="BS" typeId="wpn-bs">4+</characteristic>
+        <characteristic name="S" typeId="wpn-s">3</characteristic>
+        <characteristic name="AP" typeId="wpn-ap">0</characteristic>
+        <characteristic name="D" typeId="wpn-d">1</characteristic>
+        <characteristic name="Keywords" typeId="wpn-kw">Rapid Fire 1</characteristic>
+      </characteristics>
+    </profile>
+
+    <profile id="wpn-arc-pistol" name="Arc Pistol" hidden="false"
+             typeId="weapon-profile" typeName="Weapon">
+      <characteristics>
+        <characteristic name="Type" typeId="wpn-type">ranged</characteristic>
+        <characteristic name="Range" typeId="wpn-range">12"</characteristic>
+        <characteristic name="A" typeId="wpn-a">1</characteristic>
+        <characteristic name="BS" typeId="wpn-bs">4+</characteristic>
+        <characteristic name="S" typeId="wpn-s">6</characteristic>
+        <characteristic name="AP" typeId="wpn-ap">-1</characteristic>
+        <characteristic name="D" typeId="wpn-d">1</characteristic>
+        <characteristic name="Keywords" typeId="wpn-kw">Pistol</characteristic>
+      </characteristics>
+    </profile>
+
+    <profile id="wpn-servo-arm" name="Servo-arm" hidden="false"
+             typeId="weapon-profile" typeName="Weapon">
+      <characteristics>
+        <characteristic name="Type" typeId="wpn-type">melee</characteristic>
+        <characteristic name="A" typeId="wpn-a">1</characteristic>
+        <characteristic name="WS" typeId="wpn-ws">4+</characteristic>
+        <characteristic name="S" typeId="wpn-s">6</characteristic>
+        <characteristic name="AP" typeId="wpn-ap">-2</characteristic>
+        <characteristic name="D" typeId="wpn-d">2</characteristic>
+        <characteristic name="Keywords" typeId="wpn-kw"></characteristic>
+      </characteristics>
+    </profile>
+
+    <!-- ====== Abilities ====== -->
+    <profile id="ab-doctrines" name="Doctrina Imperatives" hidden="false"
+             typeId="ability-profile" typeName="Ability">
+      <characteristics>
+        <characteristic name="Description" typeId="ab-desc">
+          Adeptus Mechanicus units can be given one of four Doctrina Imperatives
+          at the start of each battle round, granting them different bonuses
+          depending on the chosen doctrine.
+        </characteristic>
+      </characteristics>
+    </profile>
+
+    <profile id="ab-bionics" name="Bionics" hidden="false"
+             typeId="ability-profile" typeName="Ability">
+      <characteristics>
+        <characteristic name="Description" typeId="ab-desc">
+          This unit has a 6+ invulnerable save.
+        </characteristic>
+      </characteristics>
+    </profile>
+
+  </sharedProfiles>
+
+  <sharedSelectionEntries>
+
+    <!-- ====== Tech-Priest Dominus entry ====== -->
+    <selectionEntry id="tpd" name="Tech-Priest Dominus" hidden="false"
+                    collective="false" import="true" type="unit">
+      <constraints>
+        <constraint field="selections" scope="parent" value="1" shared="true"
+                    includeChildSelections="false" id="tpd-max" type="max"/>
+      </constraints>
+      <profiles>
+        <profileRef id="tpd-profile-ref" targetId="tpd-profile"/>
+      </profiles>
+      <costs>
+        <cost name="pts" typeId="pts" value="95"/>
+      </costs>
+      <categoryLinks>
+        <categoryLink id="tpd-cat-hq" targetId="cat-hq" primary="true"/>
+        <categoryLink id="tpd-cat-am" targetId="cat-am" primary="false"/>
+      </categoryLinks>
+      <selectionEntryGroups>
+        <selectionEntryGroup id="tpd-weapons" name="Weapons" hidden="false"
+                             collective="false" import="true">
+          <selectionEntries>
+            <selectionEntry id="tpd-wpn-arc-pistol" name="Arc Pistol"
+                            hidden="false" collective="false" import="true" type="upgrade">
+              <profiles>
+                <profileRef id="tpd-wpn-arc-pistol-ref" targetId="wpn-arc-pistol"/>
+              </profiles>
+            </selectionEntry>
+            <selectionEntry id="tpd-wpn-servo-arm" name="Servo-arm"
+                            hidden="false" collective="false" import="true" type="upgrade">
+              <profiles>
+                <profileRef id="tpd-wpn-servo-arm-ref" targetId="wpn-servo-arm"/>
+              </profiles>
+            </selectionEntry>
+          </selectionEntries>
+        </selectionEntryGroup>
+      </selectionEntryGroups>
+      <entryLinks>
+        <entryLink id="tpd-ab-doctrines-link" targetId="ab-doctrines" type="profile"/>
+        <entryLink id="tpd-ab-bionics-link" targetId="ab-bionics" type="profile"/>
+      </entryLinks>
+    </selectionEntry>
+
+    <!-- ====== Skitarii Rangers entry ====== -->
+    <selectionEntry id="sr" name="Skitarii Rangers" hidden="false"
+                    collective="false" import="true" type="unit">
+      <profiles>
+        <profileRef id="sr-profile-ref" targetId="sr-profile"/>
+      </profiles>
+      <costs>
+        <cost name="pts" typeId="pts" value="75"/>
+      </costs>
+      <categoryLinks>
+        <categoryLink id="sr-cat-trp" targetId="cat-trp" primary="true"/>
+        <categoryLink id="sr-cat-am" targetId="cat-am" primary="false"/>
+      </categoryLinks>
+      <selectionEntryGroups>
+        <selectionEntryGroup id="sr-weapons" name="Weapons" hidden="false"
+                             collective="false" import="true">
+          <selectionEntries>
+            <selectionEntry id="sr-wpn-radium-carbine" name="Radium Carbine"
+                            hidden="false" collective="false" import="true" type="upgrade">
+              <profiles>
+                <profileRef id="sr-wpn-radium-carbine-ref" targetId="wpn-radium-carbine"/>
+              </profiles>
+            </selectionEntry>
+          </selectionEntries>
+        </selectionEntryGroup>
+      </selectionEntryGroups>
+      <entryLinks>
+        <entryLink id="sr-ab-doctrines-link" targetId="ab-doctrines" type="profile"/>
+        <entryLink id="sr-ab-bionics-link" targetId="ab-bionics" type="profile"/>
+      </entryLinks>
+    </selectionEntry>
+
+  </sharedSelectionEntries>
+
+  <categoryEntries>
+    <categoryEntry id="cat-hq" name="HQ" hidden="false"/>
+    <categoryEntry id="cat-trp" name="Troops" hidden="false"/>
+    <categoryEntry id="cat-am" name="Adeptus Mechanicus" hidden="false"/>
+  </categoryEntries>
+
+</catalogue>

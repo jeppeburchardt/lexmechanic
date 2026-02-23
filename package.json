@@ -1,0 +1,47 @@
+{
+  "name": "lexmechanic",
+  "version": "1.0.0",
+  "description": "Data set for Adeptus Mechanicus game, extracted from XML sources and validated with Zod",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./data": "./data/output/dataset.json"
+  },
+  "files": [
+    "dist",
+    "data/output"
+  ],
+  "scripts": {
+    "build:step1": "tsx src/build/step1-extract.ts",
+    "build:step2": "tsx src/build/step2-rinse.ts",
+    "build:step3": "tsx src/build/step3-merge.ts",
+    "build:data": "npm run build:step1 && npm run build:step2 && npm run build:step3",
+    "build:types": "tsc --project tsconfig.build.json",
+    "build": "npm run build:data && npm run build:types",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "warhammer",
+    "adeptus-mechanicus",
+    "dataset",
+    "typescript"
+  ],
+  "license": "BSD-2-Clause",
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "fast-xml-parser": "^5.3.7",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}
