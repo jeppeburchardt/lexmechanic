@@ -5,11 +5,15 @@
  * normalised intermediate JSON format stored in data/extracted/raw.json.
  *
  * Supported XML schema: Battlescribe catalogue format (*.xml / *.cat).
+ *
+ * This implementation uses camaro (XPath-based) for declarative XML transformation
+ * of profiles, combined with DOM parsing for complex nested structures.
  */
 
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { transform } from "camaro";
 import { XMLParser } from "fast-xml-parser";
 import { type RawEntry } from "../schemas/index.js";
 
@@ -18,7 +22,7 @@ const SOURCE_DIR = join(__dirname, "../../data/source");
 const EXTRACTED_DIR = join(__dirname, "../../data/extracted");
 
 // ---------------------------------------------------------------------------
-// XML parser configuration
+// XML parser for nested structures
 // ---------------------------------------------------------------------------
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -27,235 +31,229 @@ const parser = new XMLParser({
     [
       "selectionEntry",
       "selectionEntryGroup",
-      "profile",
       "profileRef",
-      "characteristic",
-      "categoryLink",
-      "categoryEntry",
       "entryLink",
-      "cost",
     ].includes(name),
 });
 
 // ---------------------------------------------------------------------------
-// Helper types for the raw Battlescribe XML structure
+// XPath templates for extracting profiles (declarative)
 // ---------------------------------------------------------------------------
-interface BsCharacteristic {
-  "@_name": string;
-  "@_typeId": string;
-  "#text"?: string | number;
-}
 
-interface BsProfile {
-  "@_id": string;
-  "@_name": string;
-  "@_typeId": string;
-  "@_typeName": string;
-  characteristics?: { characteristic?: BsCharacteristic[] };
-}
-
-interface BsEntryLink {
-  "@_id": string;
-  "@_targetId": string;
-  "@_type": string;
-}
-
-interface BsSelectionEntry {
-  "@_id": string;
-  "@_name": string;
-  "@_type": string;
-  costs?: { cost?: Array<{ "@_name": string; "@_value": string }> };
-  categoryLinks?: { categoryLink?: Array<{ "@_id": string; "@_targetId": string }> };
-  entryLinks?: { entryLink?: BsEntryLink[] };
-  selectionEntryGroups?: {
-    selectionEntryGroup?: Array<{
-      "@_name": string;
-      selectionEntries?: {
-        selectionEntry?: Array<{
-          "@_id": string;
-          "@_name": string;
-          profiles?: { profileRef?: Array<{ "@_targetId": string }> };
-        }>;
-      };
-    }>;
-  };
-  profiles?: { profileRef?: Array<{ "@_targetId": string }> };
-}
-
-interface BsCatalogue {
-  catalogue?: {
-    sharedProfiles?: { profile?: BsProfile[] };
-    sharedSelectionEntries?: { selectionEntry?: BsSelectionEntry[] };
-  };
-}
+const profilesTemplate = {
+  unitProfiles: [
+    '//sharedProfiles/profile[@typeName="Unit"]',
+    {
+      id: "@id",
+      name: "@name",
+      movement: 'characteristics/characteristic[@name="M"]',
+      toughness: 'characteristics/characteristic[@name="T"]',
+      save: 'characteristics/characteristic[@name="SV"]',
+      wounds: 'characteristics/characteristic[@name="W"]',
+      leadership: 'characteristics/characteristic[@name="LD"]',
+      objectiveControl: 'characteristics/characteristic[@name="OC"]',
+    },
+  ],
+  weaponProfiles: [
+    '//sharedProfiles/profile[@typeName="Weapon"]',
+    {
+      id: "@id",
+      name: "@name",
+      type: 'characteristics/characteristic[@name="Type"]',
+      range: 'characteristics/characteristic[@name="Range"]',
+      attacks: 'characteristics/characteristic[@name="A"]',
+      ballisticSkill: 'characteristics/characteristic[@name="BS"]',
+      weaponSkill: 'characteristics/characteristic[@name="WS"]',
+      strength: 'characteristics/characteristic[@name="S"]',
+      armorPenetration: 'characteristics/characteristic[@name="AP"]',
+      damage: 'characteristics/characteristic[@name="D"]',
+      keywords: 'characteristics/characteristic[@name="Keywords"]',
+    },
+  ],
+  abilityProfiles: [
+    '//sharedProfiles/profile[@typeName="Ability"]',
+    {
+      id: "@id",
+      name: "@name",
+      description: 'characteristics/characteristic[@name="Description"]',
+    },
+  ],
+};
 
 // ---------------------------------------------------------------------------
-// Parsing helpers
+// Helper types and functions for DOM parsing
 // ---------------------------------------------------------------------------
-function findCharacteristic(
-  chars: BsCharacteristic[],
-  name: string
-): string {
-  const found = chars.find(
-    (c) => c["@_name"].toUpperCase() === name.toUpperCase()
-  );
-  const val = found?.["#text"];
-  return val !== undefined ? String(val).trim() : "";
+
+interface ProfileData {
+  unitProfiles: Array<{
+    id: string;
+    movement: string;
+    toughness: string;
+    save: string;
+    wounds: string;
+    leadership: string;
+    objectiveControl: string;
+  }>;
+  weaponProfiles: Array<{
+    id: string;
+    name: string;
+    type: string;
+    range?: string;
+    attacks: string;
+    ballisticSkill?: string;
+    weaponSkill?: string;
+    strength: string;
+    armorPenetration: string;
+    damage: string;
+    keywords?: string;
+  }>;
+  abilityProfiles: Array<{
+    id: string;
+    name: string;
+    description: string;
+  }>;
 }
 
-function buildProfileIndex(
-  profiles: BsProfile[]
-): Map<string, BsProfile> {
-  const map = new Map<string, BsProfile>();
-  for (const p of profiles) {
-    map.set(p["@_id"], p);
-  }
-  return map;
-}
-
-function extractWeaponFromProfile(profile: BsProfile): RawEntry["weapons"][number] {
-  const chars = profile.characteristics?.characteristic ?? [];
-  const type = findCharacteristic(chars, "Type");
-  const skill =
-    type === "melee"
-      ? findCharacteristic(chars, "WS")
-      : findCharacteristic(chars, "BS");
-  const keywordsRaw = findCharacteristic(chars, "Keywords");
-  const keywords = keywordsRaw
-    ? keywordsRaw.split(",").map((k) => k.trim()).filter(Boolean)
-    : [];
-  return {
-    id: profile["@_id"],
-    name: profile["@_name"],
-    type,
-    range: type === "ranged" ? findCharacteristic(chars, "Range") : undefined,
-    attacks: findCharacteristic(chars, "A"),
-    skill,
-    strength: findCharacteristic(chars, "S"),
-    armorPenetration: findCharacteristic(chars, "AP"),
-    damage: findCharacteristic(chars, "D"),
-    keywords,
-  };
-}
-
-function extractAbilityFromProfile(
-  profile: BsProfile
-): RawEntry["abilities"][number] {
-  const chars = profile.characteristics?.characteristic ?? [];
-  const description = findCharacteristic(chars, "Description");
-  return {
-    id: profile["@_id"],
-    name: profile["@_name"],
-    description: description.replace(/\s+/g, " ").trim(),
-  };
-}
-
-function extractUnitFromProfile(profile: BsProfile): RawEntry["stats"] {
-  const chars = profile.characteristics?.characteristic ?? [];
-  return {
-    movement: findCharacteristic(chars, "M"),
-    toughness: findCharacteristic(chars, "T"),
-    save: findCharacteristic(chars, "SV"),
-    wounds: findCharacteristic(chars, "W"),
-    leadership: findCharacteristic(chars, "LD"),
-    objectiveControl: findCharacteristic(chars, "OC"),
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Main extraction logic
-// ---------------------------------------------------------------------------
-function extractCatalogue(xml: string): RawEntry[] {
-  const parsed = parser.parse(xml) as BsCatalogue;
+/**
+ * Extracts units using DOM parsing for complex nested structures
+ */
+function extractUnitsDOM(
+  xml: string,
+  profiles: ProfileData
+): RawEntry[] {
+  const parsed = parser.parse(xml) as any;
   const catalogue = parsed.catalogue;
   if (!catalogue) return [];
 
-  const allProfiles = catalogue.sharedProfiles?.profile ?? [];
-  const profileIndex = buildProfileIndex(allProfiles);
+  // Build profile lookup maps
+  const unitProfileMap = new Map(profiles.unitProfiles.map((p) => [p.id, p]));
+  const weaponProfileMap = new Map(profiles.weaponProfiles.map((p) => [p.id, p]));
+  const abilityProfileMap = new Map(profiles.abilityProfiles.map((p) => [p.id, p]));
 
   const entries: RawEntry[] = [];
+  const selectionEntries = catalogue.sharedSelectionEntries?.selectionEntry ?? [];
 
-  for (const entry of catalogue.sharedSelectionEntries?.selectionEntry ?? []) {
+  for (const entry of selectionEntries) {
     if (entry["@_type"] !== "unit") continue;
 
-    // Find the unit stats profile referenced directly or via profileRef
-    const unitProfileRefs = entry.profiles?.profileRef ?? [];
-    let statsProfile: BsProfile | undefined;
-    for (const ref of unitProfileRefs) {
-      const p = profileIndex.get(ref["@_targetId"]);
-      if (p?.["@_typeName"] === "Unit") {
-        statsProfile = p;
-        break;
-      }
-    }
+    // Get unit profile reference
+    const unitProfileRef = entry.profiles?.profileRef?.[0]?.["@_targetId"];
+    const unitProfile = unitProfileMap.get(unitProfileRef);
 
-    // Fall back: look for a profile whose id matches by convention
-    if (!statsProfile) {
-      for (const p of allProfiles) {
-        if (p["@_typeName"] === "Unit" && p["@_name"] === entry["@_name"]) {
-          statsProfile = p;
-          break;
+    const stats = unitProfile
+      ? {
+          movement: unitProfile.movement || "",
+          toughness: unitProfile.toughness || "",
+          save: unitProfile.save || "",
+          wounds: unitProfile.wounds || "",
+          leadership: unitProfile.leadership || "",
+          objectiveControl: unitProfile.objectiveControl || "",
         }
-      }
-    }
+      : {
+          movement: "",
+          toughness: "",
+          save: "",
+          wounds: "",
+          leadership: "",
+          objectiveControl: "",
+        };
 
-    if (!statsProfile) continue;
-
-    const stats = extractUnitFromProfile(statsProfile);
-
-    // Collect weapons referenced in selectionEntryGroups
+    // Extract weapon references from selectionEntryGroups
     const weapons: RawEntry["weapons"] = [];
-    for (const group of entry.selectionEntryGroups?.selectionEntryGroup ?? []) {
-      for (const subEntry of group.selectionEntries?.selectionEntry ?? []) {
-        const refs = subEntry.profiles?.profileRef ?? [];
-        for (const ref of refs) {
-          const p = profileIndex.get(ref["@_targetId"]);
-          if (p?.["@_typeName"] === "Weapon") {
-            weapons.push(extractWeaponFromProfile(p));
+    const groups = entry.selectionEntryGroups?.selectionEntryGroup ?? [];
+    for (const group of groups) {
+      const subEntries = group.selectionEntries?.selectionEntry ?? [];
+      for (const subEntry of subEntries) {
+        const weaponRefs = subEntry.profiles?.profileRef ?? [];
+        for (const ref of weaponRefs) {
+          const weaponId = ref["@_targetId"];
+          const profile = weaponProfileMap.get(weaponId);
+          if (profile) {
+            const skill =
+              profile.type === "melee"
+                ? profile.weaponSkill || ""
+                : profile.ballisticSkill || "";
+
+            const keywordsStr = profile.keywords || "";
+            const keywords = keywordsStr
+              ? keywordsStr.split(",").map((k) => k.trim()).filter(Boolean)
+              : [];
+
+            weapons.push({
+              id: profile.id,
+              name: profile.name,
+              type: profile.type || "",
+              range: profile.type === "ranged" ? profile.range : undefined,
+              attacks: profile.attacks || "",
+              skill,
+              strength: profile.strength || "",
+              armorPenetration: profile.armorPenetration || "",
+              damage: profile.damage || "",
+              keywords,
+            });
           }
         }
       }
     }
 
-    // Collect abilities from entryLinks (type="profile")
+    // Extract ability references from entryLinks
     const abilities: RawEntry["abilities"] = [];
-    for (const link of entry.entryLinks?.entryLink ?? []) {
+    const links = entry.entryLinks?.entryLink ?? [];
+    for (const link of links) {
       if (link["@_type"] === "profile") {
-        const p = profileIndex.get(link["@_targetId"]);
-        if (p?.["@_typeName"] === "Ability") {
-          abilities.push(extractAbilityFromProfile(p));
+        const abilityId = link["@_targetId"];
+        const profile = abilityProfileMap.get(abilityId);
+        if (profile) {
+          abilities.push({
+            id: profile.id,
+            name: profile.name,
+            description: profile.description.replace(/\s+/g, " ").trim(),
+          });
         }
       }
     }
 
-    // Points cost
-    const costEntry = entry.costs?.cost?.find((c) => c["@_name"] === "pts");
-    const pointsCost = costEntry ? costEntry["@_value"] : undefined;
+    // Extract points cost
+    const costs = Array.isArray(entry.costs?.cost)
+      ? entry.costs.cost
+      : entry.costs?.cost
+      ? [entry.costs.cost]
+      : [];
+    const ptsCost = costs.find((c: any) => c["@_name"] === "pts");
+    const pointsCost = ptsCost ? ptsCost["@_value"] : undefined;
 
-    // Keywords come from category names (faction-related ones)
-    const keywords: string[] = [];
-
-    const rawEntry: RawEntry = {
+    entries.push({
       id: entry["@_id"],
       name: entry["@_name"],
       faction: "Adeptus Mechanicus",
-      keywords,
+      keywords: [],
       stats,
       weapons,
       abilities,
       pointsCost,
-    };
-
-    entries.push(rawEntry);
+    });
   }
 
   return entries;
 }
 
 // ---------------------------------------------------------------------------
+// Main extraction logic
+// ---------------------------------------------------------------------------
+
+async function extractCatalogue(xml: string): Promise<RawEntry[]> {
+  // Extract profiles using declarative XPath templates
+  const profiles: ProfileData = await transform(xml, profilesTemplate);
+
+  // Extract units using DOM parsing (for complex nested structures)
+  return extractUnitsDOM(xml, profiles);
+}
+
+// ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
-function run(): void {
+
+async function run(): Promise<void> {
   const extensions = new Set([".xml", ".cat"]);
   const files = readdirSync(SOURCE_DIR).filter((f) =>
     extensions.has(extname(f).toLowerCase())
@@ -274,7 +272,7 @@ function run(): void {
     const filePath = join(SOURCE_DIR, file);
     console.log(`[step1-extract] Parsing ${file}…`);
     const xml = readFileSync(filePath, "utf-8");
-    const entries = extractCatalogue(xml);
+    const entries = await extractCatalogue(xml);
     console.log(`[step1-extract]   → ${entries.length} unit(s) found`);
     allEntries.push(...entries);
   }
@@ -287,4 +285,7 @@ function run(): void {
   );
 }
 
-run();
+run().catch((err) => {
+  console.error("[step1-extract] Fatal error:", err);
+  process.exit(1);
+});
