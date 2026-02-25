@@ -1,6 +1,6 @@
 # LexMechanic
 
-A strictly-typed npm package providing a curated dataset for the **Adeptus Mechanicus** faction from Warhammer 40,000.
+A strictly-typed npm package providing a curated dataset for the **Adeptus Titanicus** faction from Warhammer 40,000.
 
 Data is sourced from Battlescribe XML catalogue files, cleaned, and enriched with manually maintained overrides – all validated at build time with [Zod](https://zod.dev).
 
