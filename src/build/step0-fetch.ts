@@ -1,8 +1,8 @@
 /**
  * Step 0 – Fetch
  *
- * Clones the BSData/adeptus-titanicus repository and copies the .gst catalogue
- * file to data/source/ for processing by step1-extract.
+ * Clones the BSData/adeptus-titanicus repository and copies the catalogue files
+ * to data/source/ for processing by step1-extract.
  *
  * This step is run before the main build pipeline to fetch fresh data from
  * the upstream BSData repository.
@@ -18,7 +18,6 @@ const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const TEMP_DIR = join(__dirname, "../../temp");
 const SOURCE_DIR = join(__dirname, "../../data/source");
 const REPO_URL = "https://github.com/BSData/adeptus-titanicus.git";
-const CATALOGUE_FILE = "Adeptus Titanicus 2018.gst";
 
 // ---------------------------------------------------------------------------
 // Main fetch logic
@@ -51,24 +50,32 @@ async function run(): Promise<void> {
     throw error;
   }
 
-  // Read the catalogue file
-  const cataloguePath = join(TEMP_DIR, CATALOGUE_FILE);
-  if (!fs.existsSync(cataloguePath)) {
-    throw new Error(
-      `[step0-fetch] Catalogue file not found: ${CATALOGUE_FILE}`
-    );
-  }
-
-  console.log(`[step0-fetch] Reading ${CATALOGUE_FILE}…`);
-  const catalogueData = fs.readFileSync(cataloguePath, "utf-8");
-
   // Ensure source directory exists
   fs.mkdirSync(SOURCE_DIR, { recursive: true });
 
-  // Write to source directory with .xml extension for consistency
-  const outputPath = join(SOURCE_DIR, "adeptus-titanicus.xml");
-  fs.writeFileSync(outputPath, catalogueData, "utf-8");
-  console.log(`[step0-fetch] Wrote catalogue to ${outputPath}`);
+  // Find all .gst and .cat files in the temp directory
+  const files = fs.readdirSync(TEMP_DIR);
+  const catalogueFiles = files.filter(
+    (file) => file.endsWith(".gst") || file.endsWith(".cat")
+  );
+
+  if (catalogueFiles.length === 0) {
+    throw new Error("[step0-fetch] No catalogue files (.gst or .cat) found");
+  }
+
+  console.log(
+    `[step0-fetch] Found ${catalogueFiles.length} catalogue file(s)`
+  );
+
+  // Copy each catalogue file to the source directory
+  for (const file of catalogueFiles) {
+    const sourcePath = join(TEMP_DIR, file);
+    const destPath = join(SOURCE_DIR, file.replace(/\.(gst|cat)$/, ".xml"));
+
+    const content = fs.readFileSync(sourcePath, "utf-8");
+    fs.writeFileSync(destPath, content, "utf-8");
+    console.log(`[step0-fetch]   → Copied ${file} to ${destPath}`);
+  }
 
   // Clean up temp directory
   console.log("[step0-fetch] Cleaning up temp directory…");
