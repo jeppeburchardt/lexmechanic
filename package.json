@@ -17,12 +17,14 @@
     "data/output"
   ],
   "scripts": {
+    "build:step0": "tsx src/build/step0-fetch.ts",
     "build:step1": "tsx src/build/step1-extract.ts",
     "build:step2": "tsx src/build/step2-rinse.ts",
     "build:step3": "tsx src/build/step3-merge.ts",
     "build:data": "npm run build:step1 && npm run build:step2 && npm run build:step3",
     "build:types": "tsc --project tsconfig.build.json",
     "build": "npm run build:data && npm run build:types",
+    "fetch": "npm run build:step0",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit"
@@ -40,6 +42,7 @@
   "devDependencies": {
     "@types/node": "^24.0.0",
     "fast-xml-parser": "^5.3.7",
+    "isomorphic-git": "^1.37.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
